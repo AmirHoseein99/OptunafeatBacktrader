@@ -1,0 +1,12 @@
+EUR/USD
+AUD/USD
+GBP/USD
+mid point price form bid and ask
+stoploss and takeprofit & open_count & close_count
+report :
+pnl_list, avg_pnl, std_pnl, max_draw_down
+Search
+Optnna TPE
+TPE Sampler
+strategy.py in trader
+on server
