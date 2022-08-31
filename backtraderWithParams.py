@@ -269,35 +269,24 @@ if __name__ == '__main__':
         directions=["maximize", "minimize"],
         storage=storage_name,
         load_if_exists=True,
-        sampler=optuna.samplers.TPESampler(multivariate=True),
-        pruner=optuna.pruners.HyperbandPruner(),
+        sampler=optuna.samplers.MOTPESampler(n_startup_trials=1000),
+        # pruner=optuna.pruners.HyperbandPruner(),
         study_name="BackTest_Params_Search")
     # db file + load if exists
-    back_test_study.optimize(objective_func, n_trials=100)
-
+    back_test_study.optimize(objective_func, n_trials=3000)
+    report_writer()
     best_trial = back_test_study.best_trials
     print("Best value: ", best_trial.value)
     print("Parameters that achieve the best value: ", best_trial.params)
 
 
-# def report_writer(mdd):
-#     values = np.array(list(PROFIT_LOSS_DICT.values()))
-#     with open(r"reports/strategy_report.txt", 'w') as r:
-#         r.write("profit and los : \n")
-#         for key, value in PROFIT_LOSS_DICT.items():
-#             r.write(f"{key, value}")
-#             r.write("\n")
+def report_writer(trail_num):
+    values = np.array(list(PROFIT_LOSS_DICT.values()))
+    profit_loss_df = pd.DataFrame.from_dict([date, pnl], PROFIT_LOSS_DICT)
+    print(profit_loss_df.head())
 
-#         r.write("Avg PnL : ")
-#         r.write(f"{np.mean(values)}")
-#         r.write("\n")
-#         r.write("Std PnL : ")
-#         r.write(f"{np.std(values)}")
-#         r.write("\n")
-#         r.write("MaxDrawDown : ")
-#         r.write(f"{mdd}")
-
-#         print(f"Avg PnL is  :::: {np.mean(values)}")
-
-    # for date in aud_df.index.date:
-    #     PROFIT_LOSS_DICT[date.__str__()] = 0
+    # # with open(r"reports/strategy_report.txt", 'w') as r:
+    # #     r.write("profit and los : \n")
+    # #     for key, value in PROFIT_LOSS_DICT.items():
+    # #         r.write(f"{key, value}")
+    # #         r.write("\n")
