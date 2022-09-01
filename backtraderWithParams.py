@@ -1,11 +1,11 @@
-from datetime import datetime
-import backtrader as bt
-import pandas as pd
-import numpy as np
-import optuna
-import sys
 import os
-from sqlalchemy import create_engine
+import sys
+import math
+import optuna
+import numpy as np
+import pandas as pd
+import backtrader as bt
+from datetime import datetime
 
 
 ASSETS_NAMES = ["EUR", "AUD", "GBP"]
@@ -28,11 +28,11 @@ PROFIT_LOSS_DICT = {}
 MAXDRAWDOWN = 0
 
 
-stop_loss_params = {}
-take_profit_params = {}
-open_count_params = {}
-close_count_params = {}
-size_params = {}
+STOP_LOSS_PARAMS = {}
+TAKE_PROFIT_PARAMS = {}
+OPEN_COUNT_PARAMS = {}
+CLOSE_COUNT_PARAMS = {}
+SIZE_PARAMS = {}
 
 
 class MyStrategy(bt.Strategy):
@@ -222,71 +222,66 @@ def run_backtest(optuna_params):
     # report_writer()
 
 
-# stop_loss_params = {}
-# take_profit_params = {}
+# STOP_LOSS_PARAMS = {}
+# TAKE_PROFIT_PARAMS = {}
 # open_count_params = {}
 # close_count_params = {}
 # size_params = {}
 
 
+# def report_writer():
+#     values = np.array(list(PROFIT_LOSS_DICT.values()))
+#     profit_loss_df = pd.DataFrame.from_dict(
+#         PROFIT_LOSS_DICT, orient='index', columns=['date', 'pnl'])
+#     print(profit_loss_df.head())
+
+
 def objective_func(trial):
 
     for name in ASSETS_NAMES:
-        open_count_params[name] = trial.suggest_int(
-            f"{name}_open_count", 3, 28, step=5)
-        close_count_params[name] = trial.suggest_int(
-            f"{name}_close_count", 2, 22, step=5)
-        stop_loss_params[name] = trial.suggest_float(
-            f"{name}_stoploss", 500, 2500, step=500)
-        take_profit_params[name] = trial.suggest_float(
-            f"{name}_takeprofit", 500, 2500, step=500)
-        size_params[name] = trial.suggest_int(
-            f"{name}_size", 100000, 300000, step=50000)
+        OPEN_COUNT_PARAMS[name] = trial.suggest_int(
+            "{}_open_count".format(name), 3, 28, step=5)
+        CLOSE_COUNT_PARAMS[name] = trial.suggest_int(
+            "{}_close_count".format(name), 2, 22, step=5)
+        STOP_LOSS_PARAMS[name] = trial.suggest_float(
+            "{}_stoploss".format(name), 500, 2500, step=500)
+        TAKE_PROFIT_PARAMS[name] = trial.suggest_float(
+            "{}_takeprofit".format(name), 500, 2500, step=500)
+        SIZE_PARAMS[name] = trial.suggest_int(
+            "{}_size".format(name), 100000, 300000, step=50000)
 
     run_backtest({
-        'stoploss': stop_loss_params,
-        'takeprofit': take_profit_params,
-        "open_count": open_count_params,
-        "close_count": close_count_params,
-        "size": size_params
+        'stoploss': STOP_LOSS_PARAMS,
+        'takeprofit': TAKE_PROFIT_PARAMS,
+        "open_count": OPEN_COUNT_PARAMS,
+        "close_count": CLOSE_COUNT_PARAMS,
+        "size": SIZE_PARAMS
     }
     )
-
+    # report_writer()
     daily_profit_avg = np.mean(np.array(list(PROFIT_LOSS_DICT.values())))
-    daily_profit_std = np.std(np.array(list(PROFIT_LOSS_DICT.values())))
+    daily_profit_std = abs(
+        np.std(np.array(list(PROFIT_LOSS_DICT.values()))))
 
-    return daily_profit_avg, daily_profit_std
+    return daily_profit_avg
 
 
 if __name__ == '__main__':
 
-    optuna.logging.set_verbosity(optuna.logging.INFO)
+    # optuna.logging.set_verbosity(optuna.logging.INFO)
 
-    storage_name = "postgresql://postgres:newpassword@localhost/optunamultiobjdb"
+    storage_name = "postgresql://postgres:newpassword@localhost/optunasinglobjdb"
 
     # sqlite:///BackTest_Params_Search.db
     back_test_study = optuna.create_study(
-        directions=["maximize", "minimize"],
+        directions=["maximize"],
         storage=storage_name,
         load_if_exists=True,
-        sampler=optuna.samplers.MOTPESampler(n_startup_trials=1000),
+        sampler=optuna.samplers.TPESampler(n_startup_trials=500),
         # pruner=optuna.pruners.HyperbandPruner(),
         study_name="BackTest_Params_Search")
     # db file + load if exists
     back_test_study.optimize(objective_func, n_trials=3000)
-    report_writer()
     best_trial = back_test_study.best_trials
     print("Best value: ", best_trial.value)
-    print("Parameters that achieve the best value: ", best_trial.params)
-
-
-def report_writer(trail_num):
-    values = np.array(list(PROFIT_LOSS_DICT.values()))
-    profit_loss_df = pd.DataFrame.from_dict([date, pnl], PROFIT_LOSS_DICT)
-    print(profit_loss_df.head())
-
-    # # with open(r"reports/strategy_report.txt", 'w') as r:
-    # #     r.write("profit and los : \n")
-    # #     for key, value in PROFIT_LOSS_DICT.items():
-    # #         r.write(f"{key, value}")
-    # #         r.write("\n")
+    print("Parameters that achieve the best value: ", best_trials.params)
